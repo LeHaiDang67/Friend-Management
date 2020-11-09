@@ -107,3 +107,20 @@ func CommonFriends(db *sql.DB) http.HandlerFunc {
 		w.Write([]byte("HTTP status code returned!"))
 	})
 }
+
+//Subscription is...
+func Subscription(db *sql.DB) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var subRequest model.SubscriptionRequest
+		err := json.NewDecoder(r.Body).Decode(&subRequest)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("HTTP status code returned!"))
+			return
+		}
+		result := repo.Subscription(db, subRequest)
+		json.NewEncoder(w).Encode(result)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("HTTP status code returned!"))
+	})
+}

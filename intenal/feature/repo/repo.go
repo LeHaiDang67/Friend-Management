@@ -115,6 +115,18 @@ func CommonFriends(db *sql.DB, commonFriends model.CommonFriendRequest) (model.F
 	return friendList, nil
 }
 
+//Subscription subscribe to updates from an email address.
+func Subscription(db *sql.DB, subRequest model.SubscriptionRequest) model.BasicResponse {
+	var basicResponse model.BasicResponse
+	err := UpdateUser3(db, subRequest.Requestor, subRequest.Target)
+	if err != nil {
+		basicResponse.Success = false
+		return basicResponse
+	}
+	basicResponse.Success = true
+	return basicResponse
+}
+
 //GetUser get user bu email
 func GetUser(db *sql.DB, email string) (model.User, error) {
 	user := model.User{}
@@ -152,6 +164,19 @@ func UpdateUser2(db *sql.DB, user FakeUser, email string) error {
 
 	result, err := db.Exec("Update users set friends=array_append(friends,$1)  where email = $2 ",
 		email, user.Email)
+	if err != nil {
+		return err
+	}
+
+	result.RowsAffected()
+	return nil
+}
+
+//UpdateUser3 append the user []
+func UpdateUser3(db *sql.DB, requestor string, target string) error {
+
+	result, err := db.Exec("Update users set subscription = array_append(subscription,$1)  where email = $2 ",
+		target, requestor)
 	if err != nil {
 		return err
 	}
