@@ -118,7 +118,13 @@ func Subscription(db *sql.DB) http.HandlerFunc {
 			w.Write([]byte("HTTP status code returned!"))
 			return
 		}
-		result := repo.Subscription(db, subRequest)
+		result, errSub := repo.Subscription(db, subRequest)
+		if errSub != nil {
+			json.NewEncoder(w).Encode(errSub)
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("HTTP status code returned!"))
+			return
+		}
 		json.NewEncoder(w).Encode(result)
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("HTTP status code returned!"))

@@ -116,15 +116,25 @@ func CommonFriends(db *sql.DB, commonFriends model.CommonFriendRequest) (model.F
 }
 
 //Subscription subscribe to updates from an email address.
-func Subscription(db *sql.DB, subRequest model.SubscriptionRequest) model.BasicResponse {
+func Subscription(db *sql.DB, subRequest model.SubscriptionRequest) (model.BasicResponse, error) {
 	var basicResponse model.BasicResponse
-	err := UpdateUser3(db, subRequest.Requestor, subRequest.Target)
+	userRequestor, errGetUser1 := GetUser(db, subRequest.Requestor)
+	if errGetUser1 != nil {
+		basicResponse.Success = false
+		return basicResponse, errGetUser1
+	}
+	userTarget, errGetUser2 := GetUser(db, subRequest.Target)
+	if errGetUser2 != nil {
+		basicResponse.Success = false
+		return basicResponse, errGetUser2
+	}
+	err := UpdateUser3(db, userRequestor.Email, userTarget.Email)
 	if err != nil {
 		basicResponse.Success = false
-		return basicResponse
+		return basicResponse, err
 	}
 	basicResponse.Success = true
-	return basicResponse
+	return basicResponse, nil
 }
 
 //GetUser get user bu email
@@ -159,7 +169,7 @@ func UpdateUser(db *sql.DB, user FakeUser, email string) error {
 	return nil
 }
 
-//UpdateUser2 append the user []
+//UpdateUser2 append the friend user []
 func UpdateUser2(db *sql.DB, user FakeUser, email string) error {
 
 	result, err := db.Exec("Update users set friends=array_append(friends,$1)  where email = $2 ",
@@ -172,10 +182,23 @@ func UpdateUser2(db *sql.DB, user FakeUser, email string) error {
 	return nil
 }
 
-//UpdateUser3 append the user []
+//UpdateUser3 append the subscribe user []
 func UpdateUser3(db *sql.DB, requestor string, target string) error {
 
 	result, err := db.Exec("Update users set subscription = array_append(subscription,$1)  where email = $2 ",
+		target, requestor)
+	if err != nil {
+		return err
+	}
+
+	result.RowsAffected()
+	return nil
+}
+
+//UpdateUser4 append the blocked user []
+func UpdateUser4(db *sql.DB, requestor string, target string) error {
+
+	result, err := db.Exec("Update users set blocked = array_append(blocked,$1)  where email = $2 ",
 		target, requestor)
 	if err != nil {
 		return err
