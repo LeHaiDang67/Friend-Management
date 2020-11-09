@@ -25,13 +25,16 @@ func ConnectFriends(db *sql.DB, req model.FriendConnectionRequest) (model.BasicR
 
 	userA, errA := GetUser(db, req.Friends[0])
 	userB, errB := GetUser(db, req.Friends[1])
-	if errA != nil || errB != nil {
+	if errA != nil {
 		fmt.Printf("Error QueryA: %s\n", errA)
-		fmt.Printf("Error QueryB: %s\n", errB)
 		basicResponse.Success = false
 		return basicResponse, errA
 	}
-
+	if errB != nil {
+		fmt.Printf("Error QueryB: %s\n", errB)
+		basicResponse.Success = false
+		return basicResponse, errB
+	}
 	singleUserA := changeSingleUser(userA)
 	singleUserB := changeSingleUser(userB)
 
