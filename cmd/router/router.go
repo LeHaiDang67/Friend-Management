@@ -30,6 +30,7 @@ func Handler(db *sql.DB) http.Handler {
 		userRouter.Get("/list", controller.FriendList(db))
 		userRouter.Post("/common", controller.CommonFriends(db))
 		userRouter.Post("/subscribe", controller.Subscription(db))
+		userRouter.Post("/blocked", controller.Blocked(db))
 	})
 
 	return r
