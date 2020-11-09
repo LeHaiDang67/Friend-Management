@@ -60,7 +60,50 @@ func ConnectFriends(db *sql.DB) http.HandlerFunc {
 			return
 		}
 		req := model.FriendConnectionRequest{Friends: u.Friends}
-		basicResponse := repo.ConnectFriends(db, req)
+		basicResponse, err1 := repo.ConnectFriends(db, req)
+		if err1 != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("HTTP status code returned!"))
+			return
+		}
 		json.NewEncoder(w).Encode(basicResponse)
+	})
+}
+
+//FriendList is...
+func FriendList(db *sql.DB) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		email := r.URL.Query().Get("email")
+		friendList, err := repo.FriendList(db, email)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("HTTP status code returned!"))
+			return
+		}
+		json.NewEncoder(w).Encode(friendList)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("HTTP status code returned!"))
+	})
+}
+
+//CommonFriends is...
+func CommonFriends(db *sql.DB) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var commonFriends model.CommonFriendRequest
+		err := json.NewDecoder(r.Body).Decode(&commonFriends)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("HTTP status code returned!"))
+			return
+		}
+		friendList, err1 := repo.CommonFriends(db, commonFriends)
+		if err1 != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("HTTP status code returned!"))
+			return
+		}
+		json.NewEncoder(w).Encode(friendList)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("HTTP status code returned!"))
 	})
 }
