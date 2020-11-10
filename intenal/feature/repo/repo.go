@@ -170,7 +170,7 @@ func SendUpdate(db *sql.DB, sendRequest model.SendUpdateRequest) (model.SendUpda
 		return sendResponse, nil
 	}
 	Recipients := []string{}
-	allUser, err2 := GetAllUser(db)
+	allUser, err2 := GetAllUsers(db)
 	if err2 != nil {
 		sendResponse.Success = false
 		return sendResponse, nil
@@ -211,8 +211,8 @@ func GetUser(db *sql.DB, email string) (model.User, error) {
 	return user, nil
 }
 
-//GetAllUser get all user
-func GetAllUser(db *sql.DB) ([]model.User, error) {
+//GetAllUsers get all user
+func GetAllUsers(db *sql.DB) ([]model.User, error) {
 	users := []model.User{}
 	user := model.User{}
 	r, err1 := db.Query("select * from users")
