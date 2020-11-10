@@ -3,6 +3,7 @@ package controller
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"friend_management/intenal/feature/model"
 	"friend_management/intenal/feature/repo"
 	"net/http"
@@ -21,6 +22,22 @@ func GetUser(db *sql.DB) http.HandlerFunc {
 		json.NewEncoder(w).Encode(user)
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("HTTP status code returned!"))
+	})
+}
+
+//GetAllUser is...
+func GetAllUser(db *sql.DB) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		listUser, err := repo.GetAllUser(db)
+		if err != nil {
+			fmt.Println(err)
+			json.NewEncoder(w).Encode("Cannot fetch user")
+			return
+		}
+		json.NewEncoder(w).Encode(listUser)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("HTTP status code returned!"))
+
 	})
 }
 
@@ -152,5 +169,27 @@ func Blocked(db *sql.DB) http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("HTTP status code returned!"))
 
+	})
+}
+
+// SendUpdate is ...
+func SendUpdate(db *sql.DB) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var sendRequest model.SendUpdateRequest
+		err := json.NewDecoder(r.Body).Decode(&sendRequest)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("HTTP status code returned!"))
+			return
+		}
+		result, err2 := repo.SendUpdate(db, sendRequest)
+		if err2 != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("HTTP status code returned!"))
+			return
+		}
+		json.NewEncoder(w).Encode(result)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("HTTP status code returned!"))
 	})
 }

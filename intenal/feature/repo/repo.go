@@ -7,6 +7,7 @@ import (
 	"friend_management/intenal/feature/model"
 	"friend_management/intenal/feature/util"
 	"log"
+	"strings"
 
 	"github.com/lib/pq"
 )
@@ -160,6 +161,37 @@ func Blocked(db *sql.DB, subRequest model.SubscriptionRequest) (model.BasicRespo
 
 }
 
+//SendUpdate retrieve all email addresses that can receive updates from an email address.
+func SendUpdate(db *sql.DB, sendRequest model.SendUpdateRequest) (model.SendUpdateResponse, error) {
+	var sendResponse model.SendUpdateResponse
+	sender, err1 := GetUser(db, sendRequest.Sender)
+	if err1 != nil {
+		sendResponse.Success = false
+		return sendResponse, nil
+	}
+	Recipients := []string{}
+	allUser, err2 := GetAllUser(db)
+	if err2 != nil {
+		sendResponse.Success = false
+		return sendResponse, nil
+	}
+	for _, u := range allUser {
+		var isBlock = util.Contains(u.Blocked, sender.Email)
+		if !isBlock {
+			isFriend := util.Contains(u.Friends, sender.Email)
+			isSubscriber := util.Contains(u.Subscription, sender.Email)
+			isMentioned := strings.Contains(sendRequest.Text, u.Email)
+			if isFriend || isSubscriber || isMentioned {
+				Recipients = append(Recipients, u.Email)
+			}
+
+		}
+	}
+	sendResponse.Success = true
+	sendResponse.Recipients = Recipients
+	return sendResponse, nil
+}
+
 //GetUser get user bu email
 func GetUser(db *sql.DB, email string) (model.User, error) {
 	user := model.User{}
@@ -177,6 +209,25 @@ func GetUser(db *sql.DB, email string) (model.User, error) {
 	}
 
 	return user, nil
+}
+
+//GetAllUser get all user
+func GetAllUser(db *sql.DB) ([]model.User, error) {
+	users := []model.User{}
+	user := model.User{}
+	r, err1 := db.Query("select * from users")
+	if err1 != nil {
+		return users, err1
+	}
+	for r.Next() {
+		err := r.Scan(&user.Email, pq.Array(&user.Friends), pq.Array(&user.Subscription), pq.Array(&user.Blocked))
+		if err != nil {
+			return users, err
+		}
+		users = append(users, user)
+	}
+
+	return users, nil
 }
 
 //UpdateUser edit the user
