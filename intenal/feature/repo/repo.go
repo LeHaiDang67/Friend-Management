@@ -49,12 +49,12 @@ func ConnectFriends(db *sql.DB, req model.FriendConnectionRequest) (model.BasicR
 	bFriend := util.Contains(userA.Friends, userB.Email)
 	aFriend := util.Contains(userB.Friends, userA.Email)
 	if !bFriend || !aFriend {
-		errUpdateA := UpdateUser2(db, singleUserB, userA.Email)
+		errUpdateA := AddFriends(db, singleUserB, userA.Email)
 		if errUpdateA != nil {
 			fmt.Printf("Error QueryA: %s\n", errUpdateA)
 		}
 		log.Printf("B added to A friend's\n")
-		errUpdateB := UpdateUser2(db, singleUserA, userB.Email)
+		errUpdateB := AddFriends(db, singleUserA, userB.Email)
 		if errUpdateB != nil {
 			fmt.Printf("Error QueryB: %s\n", errUpdateB)
 		}
@@ -129,11 +129,16 @@ func Subscription(db *sql.DB, subRequest model.SubscriptionRequest) (model.Basic
 		basicResponse.Success = false
 		return basicResponse, errGetUser2
 	}
-	err := UpdateUser3(db, userRequestor.Email, userTarget.Email)
+
+	result, err := db.Exec("Update users set subscription = array_append(subscription,$1)  where email = $2 ",
+		userTarget.Email, userRequestor.Email)
 	if err != nil {
 		basicResponse.Success = false
 		return basicResponse, err
 	}
+
+	result.RowsAffected()
+
 	basicResponse.Success = true
 	return basicResponse, nil
 }
@@ -151,11 +156,16 @@ func Blocked(db *sql.DB, subRequest model.SubscriptionRequest) (model.BasicRespo
 		basicResponse.Success = false
 		return basicResponse, errGetUser2
 	}
-	err := UpdateUser4(db, userRequestor.Email, userTarget.Email)
-	if err != nil {
+
+	result, errQuery := db.Exec("Update users set blocked = array_append(blocked,$1)  where email = $2 ",
+		userTarget.Email, userRequestor.Email)
+	if errQuery != nil {
 		basicResponse.Success = false
-		return basicResponse, err
+		return basicResponse, errQuery
 	}
+
+	result.RowsAffected()
+
 	basicResponse.Success = true
 	return basicResponse, nil
 
@@ -243,37 +253,11 @@ func UpdateUser(db *sql.DB, user FakeUser, email string) error {
 	return nil
 }
 
-//UpdateUser2 append the friend user []
-func UpdateUser2(db *sql.DB, user FakeUser, email string) error {
+//AddFriends add a new friend
+func AddFriends(db *sql.DB, user FakeUser, email string) error {
 
 	result, err := db.Exec("Update users set friends=array_append(friends,$1)  where email = $2 ",
 		email, user.Email)
-	if err != nil {
-		return err
-	}
-
-	result.RowsAffected()
-	return nil
-}
-
-//UpdateUser3 append the subscribe user []
-func UpdateUser3(db *sql.DB, requestor string, target string) error {
-
-	result, err := db.Exec("Update users set subscription = array_append(subscription,$1)  where email = $2 ",
-		target, requestor)
-	if err != nil {
-		return err
-	}
-
-	result.RowsAffected()
-	return nil
-}
-
-//UpdateUser4 append the blocked user []
-func UpdateUser4(db *sql.DB, requestor string, target string) error {
-
-	result, err := db.Exec("Update users set blocked = array_append(blocked,$1)  where email = $2 ",
-		target, requestor)
 	if err != nil {
 		return err
 	}
