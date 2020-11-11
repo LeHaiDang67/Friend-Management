@@ -49,7 +49,7 @@ func UpdateUser(db *sql.DB) http.HandlerFunc {
 		err := json.NewDecoder(r.Body).Decode(&requestUser)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			w.Write([]byte("Request body is invalid"))
 			return
 		}
 
@@ -72,7 +72,7 @@ func ConnectFriends(db *sql.DB) http.HandlerFunc {
 		err := json.NewDecoder(r.Body).Decode(&u)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			w.Write([]byte("Request body is invalid"))
 			return
 		}
 		req := model.FriendConnectionRequest{Friends: u.Friends}
@@ -109,7 +109,7 @@ func CommonFriends(db *sql.DB) http.HandlerFunc {
 		err := json.NewDecoder(r.Body).Decode(&commonFriends)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			w.Write([]byte("Request body is invalid"))
 			return
 		}
 		friendList, err1 := repo.CommonFriends(db, commonFriends)
@@ -131,7 +131,7 @@ func Subscription(db *sql.DB) http.HandlerFunc {
 		err := json.NewDecoder(r.Body).Decode(&subRequest)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			w.Write([]byte("Request body is invalid"))
 			return
 		}
 		result, errSub := repo.Subscription(db, subRequest)
@@ -154,7 +154,7 @@ func Blocked(db *sql.DB) http.HandlerFunc {
 		err := json.NewDecoder(r.Body).Decode(&subRequest)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			w.Write([]byte("Request body is invalid"))
 			return
 		}
 		result, errSub := repo.Blocked(db, subRequest)
@@ -177,7 +177,7 @@ func SendUpdate(db *sql.DB) http.HandlerFunc {
 		err := json.NewDecoder(r.Body).Decode(&sendRequest)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			w.Write([]byte("Request body is invalid"))
 			return
 		}
 		result, err2 := repo.SendUpdate(db, sendRequest)
