@@ -129,15 +129,16 @@ func Subscription(db *sql.DB, subRequest model.SubscriptionRequest) (model.Basic
 		basicResponse.Success = false
 		return basicResponse, errGetUser2
 	}
-
-	result, err := db.Exec("Update users set subscription = array_append(subscription,$1)  where email = $2 ",
-		userTarget.Email, userRequestor.Email)
-	if err != nil {
-		basicResponse.Success = false
-		return basicResponse, err
+	isUserRequestor := util.Contains(userRequestor.Subscription, userTarget.Email)
+	if !isUserRequestor {
+		result, err := db.Exec("Update users set subscription = array_append(subscription,$1)  where email = $2 ",
+			userTarget.Email, userRequestor.Email)
+		if err != nil {
+			basicResponse.Success = false
+			return basicResponse, err
+		}
+		result.RowsAffected()
 	}
-
-	result.RowsAffected()
 
 	basicResponse.Success = true
 	return basicResponse, nil
@@ -156,15 +157,17 @@ func Blocked(db *sql.DB, subRequest model.SubscriptionRequest) (model.BasicRespo
 		basicResponse.Success = false
 		return basicResponse, errGetUser2
 	}
+	isUserRequestor := util.Contains(userRequestor.Blocked, userTarget.Email)
+	if !isUserRequestor {
+		result, errQuery := db.Exec("Update users set blocked = array_append(blocked,$1)  where email = $2 ",
+			userTarget.Email, userRequestor.Email)
+		if errQuery != nil {
+			basicResponse.Success = false
+			return basicResponse, errQuery
+		}
 
-	result, errQuery := db.Exec("Update users set blocked = array_append(blocked,$1)  where email = $2 ",
-		userTarget.Email, userRequestor.Email)
-	if errQuery != nil {
-		basicResponse.Success = false
-		return basicResponse, errQuery
+		result.RowsAffected()
 	}
-
-	result.RowsAffected()
 
 	basicResponse.Success = true
 	return basicResponse, nil
