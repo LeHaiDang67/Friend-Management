@@ -44,7 +44,7 @@ func GetAllUsers(db *sql.DB) http.HandlerFunc {
 func UpdateUser(db *sql.DB) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		email := r.URL.Query().Get("email")
-		var requestUser repo.FakeUser
+		var requestUser model.User
 
 		err := json.NewDecoder(r.Body).Decode(&requestUser)
 		if err != nil {

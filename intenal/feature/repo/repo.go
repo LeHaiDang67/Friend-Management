@@ -2,7 +2,6 @@ package repo
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"friend_management/intenal/feature/model"
 	"friend_management/intenal/feature/util"
@@ -11,14 +10,6 @@ import (
 
 	"github.com/lib/pq"
 )
-
-//FakeUser is a simgle user
-type FakeUser struct {
-	Email        string `json:"email"`
-	Friends      string `json:"friends"`
-	Subscription string `json:"subscription"`
-	Blocked      string `json:"blocked"`
-}
 
 //ConnectFriends that func connect 2 user
 func ConnectFriends(db *sql.DB, req model.FriendConnectionRequest) (model.BasicResponse, error) {
@@ -242,10 +233,10 @@ func GetAllUsers(db *sql.DB) ([]model.User, error) {
 }
 
 //UpdateUser edit the user
-func UpdateUser(db *sql.DB, user FakeUser, email string) error {
-
+func UpdateUser(db *sql.DB, user model.User, email string) error {
+	fmt.Println(strings.Join(user.Friends, ", "))
 	result, err := db.Exec("Update users set friends=array[$1] , subscription = array[$2], blocked = array[$3] where email = $4 ",
-		user.Friends, user.Subscription, user.Blocked, email)
+		strings.Join(user.Friends, ", "), strings.Join(user.Subscription, ", "), strings.Join(user.Blocked, ", "), email)
 	if err != nil {
 		return err
 	}
@@ -265,28 +256,4 @@ func AddFriends(db *sql.DB, emailFriend string, email string) error {
 
 	result.RowsAffected()
 	return nil
-}
-
-func changeSingleUser(arrUser model.User) FakeUser {
-	uFriend, errFriend := json.Marshal(arrUser.Friends)
-	uFriendStr := string(uFriend)
-	if errFriend != nil {
-		panic(errFriend)
-	}
-	uSub, errSub := json.Marshal(arrUser.Subscription)
-	uSubStr := string(uSub)
-	if errSub != nil {
-		panic(errSub)
-	}
-	uBlocked, errBlocked := json.Marshal(arrUser.Blocked)
-	uBlockedStr := string(uBlocked)
-	if errBlocked != nil {
-		panic(errFriend)
-	}
-	uFake := FakeUser{Email: arrUser.Email,
-		Friends:      uFriendStr,
-		Subscription: uSubStr,
-		Blocked:      uBlockedStr}
-
-	return uFake
 }
