@@ -2,7 +2,6 @@ package repo
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"friend_management/intenal/feature/model"
 	"friend_management/intenal/feature/util"
@@ -11,14 +10,6 @@ import (
 
 	"github.com/lib/pq"
 )
-
-//FakeUser is a simgle user
-type FakeUser struct {
-	Email        string `json:"email"`
-	Friends      string `json:"friends"`
-	Subscription string `json:"subscription"`
-	Blocked      string `json:"blocked"`
-}
 
 //ConnectFriends that func connect 2 user
 func ConnectFriends(db *sql.DB, req model.FriendConnectionRequest) (model.BasicResponse, error) {
@@ -36,8 +27,6 @@ func ConnectFriends(db *sql.DB, req model.FriendConnectionRequest) (model.BasicR
 		basicResponse.Success = false
 		return basicResponse, errB
 	}
-	singleUserA := changeSingleUser(userA)
-	singleUserB := changeSingleUser(userB)
 
 	bBlock := util.Contains(userA.Blocked, userB.Email)
 	aBlock := util.Contains(userB.Blocked, userA.Email)
@@ -49,12 +38,12 @@ func ConnectFriends(db *sql.DB, req model.FriendConnectionRequest) (model.BasicR
 	bFriend := util.Contains(userA.Friends, userB.Email)
 	aFriend := util.Contains(userB.Friends, userA.Email)
 	if !bFriend || !aFriend {
-		errUpdateA := AddFriends(db, singleUserB, userA.Email)
+		errUpdateA := AddFriends(db, userB.Email, userA.Email)
 		if errUpdateA != nil {
 			fmt.Printf("Error QueryA: %s\n", errUpdateA)
 		}
 		log.Printf("B added to A friend's\n")
-		errUpdateB := AddFriends(db, singleUserA, userB.Email)
+		errUpdateB := AddFriends(db, userA.Email, userB.Email)
 		if errUpdateB != nil {
 			fmt.Printf("Error QueryB: %s\n", errUpdateB)
 		}
@@ -243,52 +232,15 @@ func GetAllUsers(db *sql.DB) ([]model.User, error) {
 	return users, nil
 }
 
-//UpdateUser edit the user
-func UpdateUser(db *sql.DB, user FakeUser, email string) error {
-
-	result, err := db.Exec("Update users set friends=array[$1] , subscription = array[$2], blocked = array[$3] where email = $4 ",
-		user.Friends, user.Subscription, user.Blocked, email)
-	if err != nil {
-		return err
-	}
-
-	result.RowsAffected()
-	return nil
-}
-
 //AddFriends add a new friend
-func AddFriends(db *sql.DB, user FakeUser, email string) error {
+func AddFriends(db *sql.DB, emailFriend string, email string) error {
 
 	result, err := db.Exec("Update users set friends=array_append(friends,$1)  where email = $2 ",
-		email, user.Email)
+		emailFriend, email)
 	if err != nil {
 		return err
 	}
 
 	result.RowsAffected()
 	return nil
-}
-
-func changeSingleUser(arrUser model.User) FakeUser {
-	uFriend, errFriend := json.Marshal(arrUser.Friends)
-	uFriendStr := string(uFriend)
-	if errFriend != nil {
-		panic(errFriend)
-	}
-	uSub, errSub := json.Marshal(arrUser.Subscription)
-	uSubStr := string(uSub)
-	if errSub != nil {
-		panic(errSub)
-	}
-	uBlocked, errBlocked := json.Marshal(arrUser.Blocked)
-	uBlockedStr := string(uBlocked)
-	if errBlocked != nil {
-		panic(errFriend)
-	}
-	uFake := FakeUser{Email: arrUser.Email,
-		Friends:      uFriendStr,
-		Subscription: uSubStr,
-		Blocked:      uBlockedStr}
-
-	return uFake
 }
