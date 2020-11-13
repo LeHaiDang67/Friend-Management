@@ -232,19 +232,6 @@ func GetAllUsers(db *sql.DB) ([]model.User, error) {
 	return users, nil
 }
 
-//UpdateUser edit the user
-func UpdateUser(db *sql.DB, user model.User, email string) error {
-	fmt.Println(strings.Join(user.Friends, ", "))
-	result, err := db.Exec("Update users set friends=array[$1] , subscription = array[$2], blocked = array[$3] where email = $4 ",
-		strings.Join(user.Friends, ", "), strings.Join(user.Subscription, ", "), strings.Join(user.Blocked, ", "), email)
-	if err != nil {
-		return err
-	}
-
-	result.RowsAffected()
-	return nil
-}
-
 //AddFriends add a new friend
 func AddFriends(db *sql.DB, emailFriend string, email string) error {
 

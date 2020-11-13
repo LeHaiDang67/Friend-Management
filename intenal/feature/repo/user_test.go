@@ -1,4 +1,4 @@
-package test
+package repo_test
 
 import (
 	"friend_management/intenal/db"

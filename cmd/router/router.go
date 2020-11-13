@@ -26,7 +26,6 @@ func Handler(db *sql.DB) http.Handler {
 	r.Route("/friend", func(userRouter chi.Router) {
 		userRouter.Get("/", controller.GetUser(db))
 		userRouter.Get("/GetAll", controller.GetAllUsers(db))
-		userRouter.Put("/", controller.UpdateUser(db))
 		userRouter.Post("/connect", controller.ConnectFriends(db))
 		userRouter.Get("/list", controller.FriendList(db))
 		userRouter.Post("/common", controller.CommonFriends(db))
