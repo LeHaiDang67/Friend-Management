@@ -1,10 +1,9 @@
-package repo_test
+package user
 
 import (
 	"friend_management/intenal/db"
 	"friend_management/intenal/feature"
 	"friend_management/intenal/feature/model"
-	"friend_management/intenal/feature/repo"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -33,7 +32,7 @@ func TestGetUser(t *testing.T) {
 		defer db.Close()
 		t.Run(i.desc, func(t *testing.T) {
 			email := i.givenUserEmail
-			result, err := repo.GetUser(db, email)
+			result, err := GetUser(db, email)
 			if err != nil {
 				require.Equal(t, i.expectedError, err)
 			} else {
@@ -64,7 +63,7 @@ func TestConnectFriends(t *testing.T) {
 		t.Run(i.desc, func(t *testing.T) {
 			var ConnectRequest model.FriendConnectionRequest
 			ConnectRequest.Friends = i.friendArray
-			result, err := repo.ConnectFriends(db, ConnectRequest)
+			result, err := ConnectFriends(db, ConnectRequest)
 			if err != nil {
 				require.Error(t, err, i.expectedError)
 			} else {
@@ -91,7 +90,7 @@ func TestFriendList(t *testing.T) {
 	for _, i := range testCase {
 		db := db.InitDatabase()
 		defer db.Close()
-		result, err := repo.FriendList(db, i.givenUserEmail)
+		result, err := FriendList(db, i.givenUserEmail)
 		if err != nil {
 			require.Error(t, err, i.expectedError)
 		} else {
@@ -120,7 +119,7 @@ func TestCommonFriends(t *testing.T) {
 		var commonRequest model.CommonFriendRequest
 		commonRequest.Friends = i.commonFriends
 
-		result, err := repo.CommonFriends(db, commonRequest)
+		result, err := CommonFriends(db, commonRequest)
 		if err != nil {
 			require.Error(t, err, i.expectedError)
 		} else {
@@ -149,7 +148,7 @@ func TestSubscription(t *testing.T) {
 	for _, i := range testCase {
 		db := db.InitDatabase()
 		defer db.Close()
-		result, err := repo.Subscription(db, i.subscribeRequest)
+		result, err := Subscription(db, i.subscribeRequest)
 		if err != nil {
 			require.Error(t, err, i.expectedError)
 		} else {
@@ -178,7 +177,7 @@ func TestBlocked(t *testing.T) {
 	for _, i := range testCase {
 		db := db.InitDatabase()
 		defer db.Close()
-		result, err := repo.Blocked(db, i.blockedRequest)
+		result, err := Blocked(db, i.blockedRequest)
 		if err != nil {
 			require.Error(t, err, i.expectedError)
 		} else {
@@ -210,7 +209,7 @@ func TestSendUpdate(t *testing.T) {
 	for _, i := range testCase {
 		db := db.InitDatabase()
 		defer db.Close()
-		result, err := repo.SendUpdate(db, i.sendRequest)
+		result, err := SendUpdate(db, i.sendRequest)
 		if err != nil {
 			require.Error(t, err, i.expectedError)
 		} else {
@@ -219,5 +218,4 @@ func TestSendUpdate(t *testing.T) {
 		}
 
 	}
-
 }

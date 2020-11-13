@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"friend_management/intenal/feature/model"
-	"friend_management/intenal/feature/repo"
+	"friend_management/intenal/feature/user"
 	"net/http"
 )
 
@@ -14,7 +14,7 @@ func GetUser(db *sql.DB) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		email := r.URL.Query().Get("email")
 
-		user, err := repo.GetUser(db, email)
+		user, err := user.GetUser(db, email)
 		if err != nil {
 			json.NewEncoder(w).Encode("Cannot fetch user")
 			return
@@ -28,7 +28,7 @@ func GetUser(db *sql.DB) http.HandlerFunc {
 //GetAllUsers is...
 func GetAllUsers(db *sql.DB) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		listUser, err := repo.GetAllUsers(db)
+		listUser, err := user.GetAllUsers(db)
 		if err != nil {
 			fmt.Println(err)
 			json.NewEncoder(w).Encode("Cannot fetch users")
@@ -40,6 +40,33 @@ func GetAllUsers(db *sql.DB) http.HandlerFunc {
 	})
 }
 
+<<<<<<< HEAD
+=======
+//UpdateUser is...
+func UpdateUser(db *sql.DB) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		email := r.URL.Query().Get("email")
+		var requestUser model.User
+
+		err := json.NewDecoder(r.Body).Decode(&requestUser)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("Request body is invalid"))
+			return
+		}
+
+		errs := user.UpdateUser(db, requestUser, email)
+		if errs != nil {
+
+			json.NewEncoder(w).Encode("Cannot update user")
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("HTTP status code returned!"))
+	})
+}
+
+>>>>>>> b65464a... Moving user_test to internal
 //ConnectFriends is...
 func ConnectFriends(db *sql.DB) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -52,7 +79,7 @@ func ConnectFriends(db *sql.DB) http.HandlerFunc {
 			return
 		}
 		req := model.FriendConnectionRequest{Friends: u.Friends}
-		basicResponse, err1 := repo.ConnectFriends(db, req)
+		basicResponse, err1 := user.ConnectFriends(db, req)
 		if err1 != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err1.Error()))
@@ -66,7 +93,7 @@ func ConnectFriends(db *sql.DB) http.HandlerFunc {
 func FriendList(db *sql.DB) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		email := r.URL.Query().Get("email")
-		friendList, err := repo.FriendList(db, email)
+		friendList, err := user.FriendList(db, email)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
@@ -88,7 +115,7 @@ func CommonFriends(db *sql.DB) http.HandlerFunc {
 			w.Write([]byte("Request body is invalid"))
 			return
 		}
-		friendList, err1 := repo.CommonFriends(db, commonFriends)
+		friendList, err1 := user.CommonFriends(db, commonFriends)
 		if err1 != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err1.Error()))
@@ -110,7 +137,7 @@ func Subscription(db *sql.DB) http.HandlerFunc {
 			w.Write([]byte("Request body is invalid"))
 			return
 		}
-		result, errSub := repo.Subscription(db, subRequest)
+		result, errSub := user.Subscription(db, subRequest)
 		if errSub != nil {
 			json.NewEncoder(w).Encode(errSub)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -133,7 +160,7 @@ func Blocked(db *sql.DB) http.HandlerFunc {
 			w.Write([]byte("Request body is invalid"))
 			return
 		}
-		result, errSub := repo.Blocked(db, subRequest)
+		result, errSub := user.Blocked(db, subRequest)
 		if errSub != nil {
 			json.NewEncoder(w).Encode(errSub)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -156,7 +183,7 @@ func SendUpdate(db *sql.DB) http.HandlerFunc {
 			w.Write([]byte("Request body is invalid"))
 			return
 		}
-		result, err2 := repo.SendUpdate(db, sendRequest)
+		result, err2 := user.SendUpdate(db, sendRequest)
 		if err2 != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err2.Error()))
