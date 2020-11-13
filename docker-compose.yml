@@ -1,0 +1,79 @@
+version: "3.5"
+
+services:
+  go:
+    container_name: go-friend-local
+    image: golang:1.13
+    links:
+      - html2pdf
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/social?sslmode=disable
+
+  friend-api:
+    container_name: friend-api-local
+    ports:
+      - 3000:3000
+    image: golang:1.13
+    command: ["go", "run", "-mod=vendor", "cmd/main.go"]
+    env_file: ./.env
+    environment:
+      TZ: Asia/Ho_Chi_Minh
+      DATABASE_URL: postgres://postgres:postgres@db:5432/social?sslmode=disable
+    volumes:
+      - .:/app:cached
+      # Store Go build cache in volume so it persists.
+      - friend-api-go-build-cache:/root/.cache/go-build
+    working_dir: /app
+
+  db:
+    ports:
+      - "5432:5432"
+    container_name: db-friend-local
+    image: postgres:9.5.20-alpine
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: social
+
+  db-migrate:
+    container_name: db-migrate-friend-local
+    image: migrate/migrate:v3.3.0
+    restart: "no"
+    entrypoint: ""
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/social?sslmode=disable
+
+  alpine:
+    container_name: alpine-friend-local
+    image: alpine
+    restart: "no"
+
+  html2pdf:
+    container_name: http2pdf-friend-local
+    image: arachnysdocker/athenapdf-service
+    restart: "no"
+
+  runner:
+    container_name: go-friend-local
+    image: golang:1.13
+    environment:
+      TZ: Asia/Ho_Chi_Minh
+      DATABASE_URL: postgres://postgres:postgres@db:5432/social?sslmode=disable
+    volumes:
+      - .:/app:cached
+      # Store Go build cache in volume so it persists.
+      - runner-go-build-cache:/root/.cache/go-build
+    working_dir: /app
+
+
+volumes:
+  friend-api-go-build-cache:
+    name: friend-api-go-build-cache-dev
+  runner-go-build-cache:
+    name: runner-go-build-cache-dev

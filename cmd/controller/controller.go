@@ -40,33 +40,6 @@ func GetAllUsers(db *sql.DB) http.HandlerFunc {
 	})
 }
 
-<<<<<<< HEAD
-=======
-//UpdateUser is...
-func UpdateUser(db *sql.DB) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		email := r.URL.Query().Get("email")
-		var requestUser model.User
-
-		err := json.NewDecoder(r.Body).Decode(&requestUser)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("Request body is invalid"))
-			return
-		}
-
-		errs := user.UpdateUser(db, requestUser, email)
-		if errs != nil {
-
-			json.NewEncoder(w).Encode("Cannot update user")
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("HTTP status code returned!"))
-	})
-}
-
->>>>>>> b65464a... Moving user_test to internal
 //ConnectFriends is...
 func ConnectFriends(db *sql.DB) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

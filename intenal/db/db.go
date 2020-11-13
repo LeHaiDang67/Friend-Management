@@ -23,21 +23,10 @@ func InitDatabase() *sql.DB {
 	return db
 }
 
-const (
-	host     = "localhost"
-	port     = 5432
-	user     = "postgres"
-	password = "postgres"
-	dbname   = "social"
-)
-
 func getDatabase() (*sql.DB, error) {
 	databaseURL := os.Getenv("DATABASE_URL")
-	if databaseURL != "" {
-		return sql.Open("postgres", databaseURL)
+	if databaseURL == "" {
+		return nil, fmt.Errorf("Cannot get DATABASE_URL")
 	}
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s "+
-		"password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
-	return sql.Open("postgres", psqlInfo)
+	return sql.Open("postgres", databaseURL)
 }
