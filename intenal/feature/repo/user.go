@@ -115,7 +115,10 @@ func Subscription(db *sql.DB, subRequest model.SubscriptionRequest) (model.Basic
 	}
 	userTarget, errGetUser2 := GetUser(db, subRequest.Target)
 	if errGetUser2 != nil {
+<<<<<<< HEAD:intenal/feature/repo/user.go
 
+=======
+>>>>>>> 7040a830743aeadb460903ad85117992dc0f2fce:intenal/feature/repo/repo.go
 		basicResponse.Success = false
 		return basicResponse, errGetUser2
 	}
@@ -123,6 +126,7 @@ func Subscription(db *sql.DB, subRequest model.SubscriptionRequest) (model.Basic
 	if err != nil {
 		basicResponse.Success = false
 		return basicResponse, err
+<<<<<<< HEAD:intenal/feature/repo/user.go
 
 		basicResponse.Success = false
 		return basicResponse, errGetUser2
@@ -137,10 +141,13 @@ func Subscription(db *sql.DB, subRequest model.SubscriptionRequest) (model.Basic
 		}
 		result.RowsAffected()
 
+=======
+>>>>>>> 7040a830743aeadb460903ad85117992dc0f2fce:intenal/feature/repo/repo.go
 	}
 
 	basicResponse.Success = true
 	return basicResponse, nil
+<<<<<<< HEAD:intenal/feature/repo/user.go
 
 }
 
@@ -204,6 +211,8 @@ func SendUpdate(db *sql.DB, sendRequest model.SendUpdateRequest) (model.SendUpda
 	sendResponse.Recipients = Recipients
 	return sendResponse, nil
 
+=======
+>>>>>>> 7040a830743aeadb460903ad85117992dc0f2fce:intenal/feature/repo/repo.go
 }
 
 //GetUser get user bu email
@@ -264,6 +273,24 @@ func UpdateUser3(db *sql.DB, requestor string, target string) error {
 
 	result, err := db.Exec("Update users set friends=array_append(friends,$1)  where email = $2 ",
 		emailFriend, email)
+	if err != nil {
+		return err
+	}
+
+	result.RowsAffected()
+	return nil
+}
+
+<<<<<<< HEAD:intenal/feature/repo/user.go
+//UpdateUser4 append the blocked user []
+func UpdateUser4(db *sql.DB, requestor string, target string) error {
+=======
+//UpdateUser3 append the subscribe user []
+func UpdateUser3(db *sql.DB, requestor string, target string) error {
+>>>>>>> 7040a830743aeadb460903ad85117992dc0f2fce:intenal/feature/repo/repo.go
+
+	result, err := db.Exec("Update users set blocked = array_append(blocked,$1)  where email = $2 ",
+		target, requestor)
 	if err != nil {
 		return err
 	}
