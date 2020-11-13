@@ -2,22 +2,14 @@ package repo
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"friend_management/intenal/feature/model"
 	"friend_management/intenal/feature/util"
 	"log"
+	"strings"
 
 	"github.com/lib/pq"
 )
-
-//FakeUser is a simgle user
-type FakeUser struct {
-	Email        string `json:"email"`
-	Friends      string `json:"friends"`
-	Subscription string `json:"subscription"`
-	Blocked      string `json:"blocked"`
-}
 
 //ConnectFriends that func connect 2 user
 func ConnectFriends(db *sql.DB, req model.FriendConnectionRequest) (model.BasicResponse, error) {
@@ -35,8 +27,6 @@ func ConnectFriends(db *sql.DB, req model.FriendConnectionRequest) (model.BasicR
 		basicResponse.Success = false
 		return basicResponse, errB
 	}
-	singleUserA := changeSingleUser(userA)
-	singleUserB := changeSingleUser(userB)
 
 	bBlock := util.Contains(userA.Blocked, userB.Email)
 	aBlock := util.Contains(userB.Blocked, userA.Email)
@@ -48,12 +38,12 @@ func ConnectFriends(db *sql.DB, req model.FriendConnectionRequest) (model.BasicR
 	bFriend := util.Contains(userA.Friends, userB.Email)
 	aFriend := util.Contains(userB.Friends, userA.Email)
 	if !bFriend || !aFriend {
-		errUpdateA := UpdateUser2(db, singleUserB, userA.Email)
+		errUpdateA := AddFriends(db, userB.Email, userA.Email)
 		if errUpdateA != nil {
 			fmt.Printf("Error QueryA: %s\n", errUpdateA)
 		}
 		log.Printf("B added to A friend's\n")
-		errUpdateB := UpdateUser2(db, singleUserA, userB.Email)
+		errUpdateB := AddFriends(db, userA.Email, userB.Email)
 		if errUpdateB != nil {
 			fmt.Printf("Error QueryB: %s\n", errUpdateB)
 		}
@@ -116,15 +106,104 @@ func CommonFriends(db *sql.DB, commonFriends model.CommonFriendRequest) (model.F
 }
 
 //Subscription subscribe to updates from an email address.
-func Subscription(db *sql.DB, subRequest model.SubscriptionRequest) model.BasicResponse {
+func Subscription(db *sql.DB, subRequest model.SubscriptionRequest) (model.BasicResponse, error) {
 	var basicResponse model.BasicResponse
-	err := UpdateUser3(db, subRequest.Requestor, subRequest.Target)
+	userRequestor, errGetUser1 := GetUser(db, subRequest.Requestor)
+	if errGetUser1 != nil {
+		basicResponse.Success = false
+		return basicResponse, errGetUser1
+	}
+	userTarget, errGetUser2 := GetUser(db, subRequest.Target)
+	if errGetUser2 != nil {
+
+		basicResponse.Success = false
+		return basicResponse, errGetUser2
+	}
+	err := UpdateUser3(db, userRequestor.Email, userTarget.Email)
 	if err != nil {
 		basicResponse.Success = false
-		return basicResponse
+		return basicResponse, err
+
+		basicResponse.Success = false
+		return basicResponse, errGetUser2
 	}
+	isUserRequestor := util.Contains(userRequestor.Subscription, userTarget.Email)
+	if !isUserRequestor {
+		result, err := db.Exec("Update users set subscription = array_append(subscription,$1)  where email = $2 ",
+			userTarget.Email, userRequestor.Email)
+		if err != nil {
+			basicResponse.Success = false
+			return basicResponse, err
+		}
+		result.RowsAffected()
+
+	}
+
 	basicResponse.Success = true
-	return basicResponse
+	return basicResponse, nil
+
+}
+
+//Blocked is  an API to block updates from an email address
+func Blocked(db *sql.DB, subRequest model.SubscriptionRequest) (model.BasicResponse, error) {
+	var basicResponse model.BasicResponse
+	userRequestor, errGetUser1 := GetUser(db, subRequest.Requestor)
+	if errGetUser1 != nil {
+		basicResponse.Success = false
+		return basicResponse, errGetUser1
+	}
+	userTarget, errGetUser2 := GetUser(db, subRequest.Target)
+	if errGetUser2 != nil {
+		basicResponse.Success = false
+		return basicResponse, errGetUser2
+	}
+	isUserRequestor := util.Contains(userRequestor.Blocked, userTarget.Email)
+	if !isUserRequestor {
+		result, errQuery := db.Exec("Update users set blocked = array_append(blocked,$1)  where email = $2 ",
+			userTarget.Email, userRequestor.Email)
+		if errQuery != nil {
+			basicResponse.Success = false
+			return basicResponse, errQuery
+		}
+
+		result.RowsAffected()
+	}
+
+	basicResponse.Success = true
+	return basicResponse, nil
+
+}
+
+//SendUpdate retrieve all email addresses that can receive updates from an email address.
+func SendUpdate(db *sql.DB, sendRequest model.SendUpdateRequest) (model.SendUpdateResponse, error) {
+	var sendResponse model.SendUpdateResponse
+	sender, err1 := GetUser(db, sendRequest.Sender)
+	if err1 != nil {
+		sendResponse.Success = false
+		return sendResponse, nil
+	}
+	Recipients := []string{}
+	allUser, err2 := GetAllUsers(db)
+	if err2 != nil {
+		sendResponse.Success = false
+		return sendResponse, nil
+	}
+	for _, u := range allUser {
+		var isBlock = util.Contains(u.Blocked, sender.Email)
+		if !isBlock {
+			isFriend := util.Contains(u.Friends, sender.Email)
+			isSubscriber := util.Contains(u.Subscription, sender.Email)
+			isMentioned := strings.Contains(sendRequest.Text, u.Email)
+			if isFriend || isSubscriber || isMentioned {
+				Recipients = append(Recipients, u.Email)
+			}
+
+		}
+	}
+	sendResponse.Success = true
+	sendResponse.Recipients = Recipients
+	return sendResponse, nil
+
 }
 
 //GetUser get user bu email
@@ -146,36 +225,57 @@ func GetUser(db *sql.DB, email string) (model.User, error) {
 	return user, nil
 }
 
-//UpdateUser edit the user
-func UpdateUser(db *sql.DB, user FakeUser, email string) error {
-
-	result, err := db.Exec("Update users set friends=array[$1] , subscription = array[$2], blocked = array[$3] where email = $4 ",
-		user.Friends, user.Subscription, user.Blocked, email)
-	if err != nil {
-		return err
+//GetAllUsers get all user
+func GetAllUsers(db *sql.DB) ([]model.User, error) {
+	users := []model.User{}
+	user := model.User{}
+	r, err1 := db.Query("select * from users")
+	if err1 != nil {
+		return users, err1
 	}
+
 
 	result.RowsAffected()
 	return nil
 }
 
-//UpdateUser2 append the user []
+//UpdateUser2 append the friend user []
 func UpdateUser2(db *sql.DB, user FakeUser, email string) error {
 
 	result, err := db.Exec("Update users set friends=array_append(friends,$1)  where email = $2 ",
 		email, user.Email)
 	if err != nil {
 		return err
+
+	for r.Next() {
+		err := r.Scan(&user.Email, pq.Array(&user.Friends), pq.Array(&user.Subscription), pq.Array(&user.Blocked))
+		if err != nil {
+			return users, err
+		}
+		users = append(users, user)
+
+	}
+
+	return users, nil
+}
+
+//UpdateUser3 append the subscribe user []
+func UpdateUser3(db *sql.DB, requestor string, target string) error {
+
+	result, err := db.Exec("Update users set friends=array_append(friends,$1)  where email = $2 ",
+		emailFriend, email)
+	if err != nil {
+		return err
 	}
 
 	result.RowsAffected()
 	return nil
 }
 
-//UpdateUser3 append the user []
-func UpdateUser3(db *sql.DB, requestor string, target string) error {
+//UpdateUser4 append the blocked user []
+func UpdateUser4(db *sql.DB, requestor string, target string) error {
 
-	result, err := db.Exec("Update users set subscription = array_append(subscription,$1)  where email = $2 ",
+	result, err := db.Exec("Update users set blocked = array_append(blocked,$1)  where email = $2 ",
 		target, requestor)
 	if err != nil {
 		return err
