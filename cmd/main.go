@@ -2,7 +2,7 @@ package main
 
 import (
 	"friend_management/cmd/server"
-	"friend_management/intenal/db"
+	"friend_management/internal/db"
 
 	_ "github.com/joho/godotenv/autoload"
 )

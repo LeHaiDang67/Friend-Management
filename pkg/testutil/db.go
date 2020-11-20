@@ -3,6 +3,7 @@ package testutil
 import (
 	"context"
 	"database/sql"
+	"friend_management/internal/db"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -11,36 +12,57 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type TxDB struct {
+	*sql.Tx
+}
+
+// BeginTx implements Beginner
+func (txdb *TxDB) BeginTx(ctx context.Context, opts *sql.TxOptions) (db.Transactor, error) {
+	return txdb, nil
+}
+
+// Commit implements Transactor
+func (txdb *TxDB) Commit() error {
+	return nil
+}
+
+// Rollback implements Transactor
+// After a call to Commit or Rollback, all operations on the
+// transaction fail with ErrTxDone.
+func (txdb *TxDB) Rollback() error {
+	return nil
+}
+
 // WithTxDB calls a callback function with a new transaction that will be rolled
 // back, so no data is actually written to the database. This is helpful for
 // database-related tests where you don't have to care about tearing down a
 // database.
-func WithTxDB(t *testing.T, callback func(tx *sql.Tx)) {
+func WithTxDB(t *testing.T, callback func(db.BeginnerExecutor)) {
 	t.Helper()
 
-	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	pgDB, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer db.Close()
+	defer pgDB.Close()
 
-	tx, err := db.BeginTx(context.Background(), nil)
+	tx, err := pgDB.BeginTx(context.Background(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer tx.Rollback()
 
-	callback(tx)
+	callback(&TxDB{Tx: tx})
 }
 
 // LoadTestDataFile load test data from a file
-func LoadTestDataFile(t *testing.T, db *sql.DB, filename string) {
+func LoadTestDataFile(t *testing.T, tx db.Executor, filename string) {
 	t.Helper()
 
 	body, err := Read(filename)
 	require.NoError(t, err)
 
-	_, err = db.Exec(string(body))
+	_, err = tx.Exec(string(body))
 	require.NoError(t, err)
 }
 

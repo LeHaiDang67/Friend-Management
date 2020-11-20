@@ -1,15 +1,15 @@
 package server
 
 import (
-	"database/sql"
 	"fmt"
 	"friend_management/cmd/router"
+	"friend_management/internal/db"
 	"net/http"
 	"os"
 )
 
 // Start starts the application server
-func Start(db *sql.DB) {
+func Start(db db.Executor) {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "3000"

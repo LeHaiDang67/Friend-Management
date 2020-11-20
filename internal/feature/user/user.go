@@ -1,10 +1,10 @@
 package user
 
 import (
-	"database/sql"
 	"fmt"
-	"friend_management/intenal/feature/model"
-	"friend_management/intenal/feature/util"
+	"friend_management/internal/db"
+	"friend_management/internal/feature/model"
+	"friend_management/internal/feature/util"
 	"log"
 	"strings"
 
@@ -12,7 +12,7 @@ import (
 )
 
 //ConnectFriends that func connect 2 user
-func ConnectFriends(db *sql.DB, req model.FriendConnectionRequest) (model.BasicResponse, error) {
+func ConnectFriends(db db.Executor, req model.FriendConnectionRequest) (model.BasicResponse, error) {
 	basicResponse := model.BasicResponse{}
 
 	userA, errA := GetUser(db, req.Friends[0])
@@ -55,7 +55,7 @@ func ConnectFriends(db *sql.DB, req model.FriendConnectionRequest) (model.BasicR
 }
 
 //FriendList show friend list
-func FriendList(db *sql.DB, email string) (model.FriendListResponse, error) {
+func FriendList(db db.Executor, email string) (model.FriendListResponse, error) {
 	user := model.User{}
 	var friendList model.FriendListResponse
 	r, err1 := db.Query("select * from users where email = $1", email)
@@ -77,7 +77,7 @@ func FriendList(db *sql.DB, email string) (model.FriendListResponse, error) {
 }
 
 //CommonFriends retrieve the common friends list between two email addresses
-func CommonFriends(db *sql.DB, commonFriends model.CommonFriendRequest) (model.FriendListResponse, error) {
+func CommonFriends(db db.Executor, commonFriends model.CommonFriendRequest) (model.FriendListResponse, error) {
 	var friendList model.FriendListResponse
 	userA, errA := GetUser(db, commonFriends.Friends[0])
 	userB, errB := GetUser(db, commonFriends.Friends[1])
@@ -106,7 +106,7 @@ func CommonFriends(db *sql.DB, commonFriends model.CommonFriendRequest) (model.F
 }
 
 //Subscription subscribe to updates from an email address.
-func Subscription(db *sql.DB, subRequest model.SubscriptionRequest) (model.BasicResponse, error) {
+func Subscription(db db.Executor, subRequest model.SubscriptionRequest) (model.BasicResponse, error) {
 	var basicResponse model.BasicResponse
 	userRequestor, errGetUser1 := GetUser(db, subRequest.Requestor)
 	if errGetUser1 != nil {
@@ -134,7 +134,7 @@ func Subscription(db *sql.DB, subRequest model.SubscriptionRequest) (model.Basic
 }
 
 //Blocked is  an API to block updates from an email address
-func Blocked(db *sql.DB, subRequest model.SubscriptionRequest) (model.BasicResponse, error) {
+func Blocked(db db.Executor, subRequest model.SubscriptionRequest) (model.BasicResponse, error) {
 	var basicResponse model.BasicResponse
 	userRequestor, errGetUser1 := GetUser(db, subRequest.Requestor)
 	if errGetUser1 != nil {
@@ -164,7 +164,7 @@ func Blocked(db *sql.DB, subRequest model.SubscriptionRequest) (model.BasicRespo
 }
 
 //SendUpdate retrieve all email addresses that can receive updates from an email address.
-func SendUpdate(db *sql.DB, sendRequest model.SendUpdateRequest) (model.SendUpdateResponse, error) {
+func SendUpdate(db db.Executor, sendRequest model.SendUpdateRequest) (model.SendUpdateResponse, error) {
 	var sendResponse model.SendUpdateResponse
 	sender, err1 := GetUser(db, sendRequest.Sender)
 	if err1 != nil {
@@ -195,12 +195,12 @@ func SendUpdate(db *sql.DB, sendRequest model.SendUpdateRequest) (model.SendUpda
 }
 
 //GetUser get user bu email
-func GetUser(db *sql.DB, email string) (model.User, error) {
+func GetUser(db db.Executor, email string) (model.User, error) {
 	user := model.User{}
-
-	r, err1 := db.Query("select * from users where email = $1", email)
-	if err1 != nil {
-		return user, err1
+	query := "select * from users where email = $1"
+	r, err := db.Query(query, email)
+	if err != nil {
+		return user, err
 	}
 
 	for r.Next() {
@@ -214,7 +214,7 @@ func GetUser(db *sql.DB, email string) (model.User, error) {
 }
 
 //GetAllUsers get all user
-func GetAllUsers(db *sql.DB) ([]model.User, error) {
+func GetAllUsers(db db.Executor) ([]model.User, error) {
 	users := []model.User{}
 	user := model.User{}
 	r, err1 := db.Query("select * from users")
@@ -233,8 +233,7 @@ func GetAllUsers(db *sql.DB) ([]model.User, error) {
 }
 
 //AddFriends add a new friend
-func AddFriends(db *sql.DB, emailFriend string, email string) error {
-
+func AddFriends(db db.Executor, emailFriend string, email string) error {
 	result, err := db.Exec("Update users set friends=array_append(friends,$1)  where email = $2 ",
 		emailFriend, email)
 	if err != nil {

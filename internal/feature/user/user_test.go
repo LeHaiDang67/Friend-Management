@@ -1,9 +1,11 @@
 package user
 
 import (
-	"friend_management/intenal/db"
-	"friend_management/intenal/feature"
-	"friend_management/intenal/feature/model"
+	"errors"
+	"friend_management/internal/db"
+	"friend_management/internal/feature"
+	"friend_management/internal/feature/model"
+	"friend_management/pkg/testutil"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,30 +17,37 @@ func TestGetUser(t *testing.T) {
 		desc           string
 		givenUserEmail string
 		expectedResult model.User
-		expectedError  *feature.ResponseError
+		expectedError  error
 	}{
 		{
-			desc:           "Retrieve success",
-			givenUserEmail: "tom@example.com",
+			desc:           "Should return user",
+			givenUserEmail: "test-email@gmail.com",
+			expectedResult: model.User{
+				Email:   "test-email@gmail.com",
+				Friends: []string{"hero@gmail.com"},
+			},
+			expectedError: nil,
 		},
 		{
-			desc:           "Retrieve error",
+			desc:           "Should return no user",
 			givenUserEmail: "andy@example.com",
+			expectedResult: model.User{},
+			expectedError:  errors.New("sad"),
 		},
 	}
 
-	for _, i := range testCases {
-		db := db.InitDatabase()
-		defer db.Close()
-		t.Run(i.desc, func(t *testing.T) {
-			email := i.givenUserEmail
-			result, err := GetUser(db, email)
-			if err != nil {
-				require.Equal(t, i.expectedError, err)
-			} else {
-				require.Nil(t, err)
-				require.Equal(t, i.expectedResult, result)
-			}
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			testutil.WithTxDB(t, func(tx db.BeginnerExecutor) {
+				testutil.LoadTestDataFile(t, tx, "internal/feature/user/testData/01_get_user.sql")
+				result, err := GetUser(tx, tc.givenUserEmail)
+				if err != nil {
+					require.Equal(t, tc.expectedError, err)
+				} else {
+					require.Nil(t, err)
+					require.Equal(t, tc.expectedResult, result)
+				}
+			})
 		})
 	}
 }
@@ -57,18 +66,18 @@ func TestConnectFriends(t *testing.T) {
 		},
 	}
 
-	for _, i := range testCases {
+	for _, tc := range testCases {
 		db := db.InitDatabase()
 		defer db.Close()
-		t.Run(i.desc, func(t *testing.T) {
+		t.Run(tc.desc, func(t *testing.T) {
 			var ConnectRequest model.FriendConnectionRequest
-			ConnectRequest.Friends = i.friendArray
+			ConnectRequest.Friends = tc.friendArray
 			result, err := ConnectFriends(db, ConnectRequest)
 			if err != nil {
-				require.Error(t, err, i.expectedError)
+				require.Error(t, err, tc.expectedError)
 			} else {
 				require.Nil(t, err)
-				require.Equal(t, i.expectedResult, result.Success)
+				require.Equal(t, tc.expectedResult, result.Success)
 			}
 		})
 	}
@@ -87,57 +96,57 @@ func TestFriendList(t *testing.T) {
 			expectedResult: true,
 		},
 	}
-	for _, i := range testCase {
+	for _, tc := range testCase {
 		db := db.InitDatabase()
 		defer db.Close()
-		result, err := FriendList(db, i.givenUserEmail)
+		result, err := FriendList(db, tc.givenUserEmail)
 		if err != nil {
-			require.Error(t, err, i.expectedError)
+			require.Error(t, err, tc.expectedError)
 		} else {
 			require.Nil(t, err)
-			require.Equal(t, i.expectedResult, result.Success)
+			require.Equal(t, tc.expectedResult, result.Success)
 		}
 	}
 }
 
 func TestCommonFriends(t *testing.T) {
 	testCase := []struct {
-		dest           string
+		desc           string
 		commonFriends  []string
 		expectedResult bool
 		expectedError  *feature.ResponseError
 	}{
 		{
-			dest:           "Retrieve success",
+			desc:           "Retrieve success",
 			commonFriends:  []string{"andy@example.com", "dang@example.com"},
 			expectedResult: true,
 		},
 	}
-	for _, i := range testCase {
+	for _, tc := range testCase {
 		db := db.InitDatabase()
 		defer db.Close()
 		var commonRequest model.CommonFriendRequest
-		commonRequest.Friends = i.commonFriends
+		commonRequest.Friends = tc.commonFriends
 
 		result, err := CommonFriends(db, commonRequest)
 		if err != nil {
-			require.Error(t, err, i.expectedError)
+			require.Error(t, err, tc.expectedError)
 		} else {
 			require.Nil(t, err)
-			require.Equal(t, i.expectedResult, result.Success)
+			require.Equal(t, tc.expectedResult, result.Success)
 		}
 	}
 }
 
 func TestSubscription(t *testing.T) {
 	testCase := []struct {
-		dest             string
+		desc             string
 		subscribeRequest model.SubscriptionRequest
 		expectedResult   bool
 		expectedError    *feature.ResponseError
 	}{
 		{
-			dest: "Retrieve success",
+			desc: "Retrieve success",
 			subscribeRequest: model.SubscriptionRequest{
 				Requestor: "tu@example.com",
 				Target:    "andy@example.com",
@@ -160,13 +169,13 @@ func TestSubscription(t *testing.T) {
 
 func TestBlocked(t *testing.T) {
 	testCase := []struct {
-		dest           string
+		desc           string
 		blockedRequest model.SubscriptionRequest
 		expectedResult bool
 		expectedError  *feature.ResponseError
 	}{
 		{
-			dest: "Retrieve success",
+			desc: "Retrieve success",
 			blockedRequest: model.SubscriptionRequest{
 				Requestor: "andy@example.com",
 				Target:    "john@example.com",
@@ -189,13 +198,13 @@ func TestBlocked(t *testing.T) {
 
 func TestSendUpdate(t *testing.T) {
 	testCase := []struct {
-		dest           string
+		desc           string
 		sendRequest    model.SendUpdateRequest
 		expectedResult model.SendUpdateResponse
 		expectedError  *feature.ResponseError
 	}{
 		{
-			dest: "Retrieve success",
+			desc: "Retrieve success",
 			sendRequest: model.SendUpdateRequest{
 				Sender: "andy@example.com",
 				Text:   "Hello World! phuc@example.com",
@@ -216,6 +225,5 @@ func TestSendUpdate(t *testing.T) {
 			require.Nil(t, err)
 			require.Equal(t, i.expectedResult, result)
 		}
-
 	}
 }
