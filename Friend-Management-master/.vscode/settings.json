@@ -1,0 +1,5 @@
+{
+    "go.testEnvVars": {
+      "DATABASE_URL": "postgres://postgres:postgres@localhost:5432/social?sslmode=disable"
+    }
+}
