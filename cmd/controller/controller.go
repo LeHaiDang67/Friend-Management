@@ -1,32 +1,42 @@
 package controller
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
-	"friend_management/intenal/feature/model"
-	"friend_management/intenal/feature/user"
+	"friend_management/internal/db"
+	"friend_management/internal/feature"
+	"friend_management/internal/feature/model"
+	"friend_management/internal/feature/user"
+	"friend_management/pkg/ihttp"
 	"net/http"
 )
 
 //GetUser is...
-func GetUser(db *sql.DB) http.HandlerFunc {
+func GetUser(db db.Executor) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		email := r.URL.Query().Get("email")
+		if email == "" {
+			ihttp.Respond(w, http.StatusBadRequest, feature.ResponseError{
+				Error:       "missing_input_param",
+				Description: "Error missing email param",
+			})
+			return
+		}
 
 		user, err := user.GetUser(db, email)
 		if err != nil {
-			json.NewEncoder(w).Encode("Cannot fetch user")
+			ihttp.Respond(w, http.StatusInternalServerError, feature.ResponseError{
+				Error:       "error_external_server",
+				Description: "Cannot fetch user",
+			})
 			return
 		}
-		json.NewEncoder(w).Encode(user)
-		w.WriteHeader(http.StatusOK)
-
+		ihttp.Respond(w, http.StatusOK, user)
 	})
 }
 
 //GetAllUsers is...
-func GetAllUsers(db *sql.DB) http.HandlerFunc {
+func GetAllUsers(db db.Executor) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		listUser, err := user.GetAllUsers(db)
 		if err != nil {
@@ -36,12 +46,11 @@ func GetAllUsers(db *sql.DB) http.HandlerFunc {
 		}
 		json.NewEncoder(w).Encode(listUser)
 		w.WriteHeader(http.StatusOK)
-
 	})
 }
 
 //ConnectFriends is...
-func ConnectFriends(db *sql.DB) http.HandlerFunc {
+func ConnectFriends(db db.Executor) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var u model.User
 
@@ -63,7 +72,7 @@ func ConnectFriends(db *sql.DB) http.HandlerFunc {
 }
 
 //FriendList is...
-func FriendList(db *sql.DB) http.HandlerFunc {
+func FriendList(db db.Executor) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		email := r.URL.Query().Get("email")
 		friendList, err := user.FriendList(db, email)
@@ -74,12 +83,11 @@ func FriendList(db *sql.DB) http.HandlerFunc {
 		}
 		json.NewEncoder(w).Encode(friendList)
 		w.WriteHeader(http.StatusOK)
-
 	})
 }
 
 //CommonFriends is...
-func CommonFriends(db *sql.DB) http.HandlerFunc {
+func CommonFriends(db db.Executor) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var commonFriends model.CommonFriendRequest
 		err := json.NewDecoder(r.Body).Decode(&commonFriends)
@@ -96,12 +104,11 @@ func CommonFriends(db *sql.DB) http.HandlerFunc {
 		}
 		json.NewEncoder(w).Encode(friendList)
 		w.WriteHeader(http.StatusOK)
-
 	})
 }
 
 //Subscription is...
-func Subscription(db *sql.DB) http.HandlerFunc {
+func Subscription(db db.Executor) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var subRequest model.SubscriptionRequest
 		err := json.NewDecoder(r.Body).Decode(&subRequest)
@@ -119,12 +126,11 @@ func Subscription(db *sql.DB) http.HandlerFunc {
 		}
 		json.NewEncoder(w).Encode(result)
 		w.WriteHeader(http.StatusOK)
-
 	})
 }
 
 //Blocked is...
-func Blocked(db *sql.DB) http.HandlerFunc {
+func Blocked(db db.Executor) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var subRequest model.SubscriptionRequest
 		err := json.NewDecoder(r.Body).Decode(&subRequest)
@@ -142,12 +148,11 @@ func Blocked(db *sql.DB) http.HandlerFunc {
 		}
 		json.NewEncoder(w).Encode(result)
 		w.WriteHeader(http.StatusOK)
-
 	})
 }
 
 // SendUpdate is ...
-func SendUpdate(db *sql.DB) http.HandlerFunc {
+func SendUpdate(db db.Executor) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var sendRequest model.SendUpdateRequest
 		err := json.NewDecoder(r.Body).Decode(&sendRequest)
@@ -164,6 +169,5 @@ func SendUpdate(db *sql.DB) http.HandlerFunc {
 		}
 		json.NewEncoder(w).Encode(result)
 		w.WriteHeader(http.StatusOK)
-
 	})
 }

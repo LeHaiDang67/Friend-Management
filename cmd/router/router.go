@@ -1,8 +1,8 @@
 package router
 
 import (
-	"database/sql"
 	"friend_management/cmd/controller"
+	"friend_management/internal/db"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -10,7 +10,7 @@ import (
 )
 
 // Handler returns the http handler that handles all requests
-func Handler(db *sql.DB) http.Handler {
+func Handler(db db.Executor) http.Handler {
 	r := chi.NewRouter()
 
 	// Basic CORS
